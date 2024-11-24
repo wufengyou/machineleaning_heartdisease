@@ -1,0 +1,361 @@
+我來幫你重新組織這個專案，創建完整的訓練和預測流程。
+
+首先是訓練腳本：
+
+```python
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from imblearn.over_sampling import SMOTE
+import pickle
+from tqdm import tqdm
+import time
+
+class ModelTrainer:
+    def __init__(self):
+        self.numerical_features = ['bmi', 'physicalhealth', 'mentalhealth', 'sleeptime']
+        self.categorical_features = ['smoking', 'alcoholdrinking', 'stroke', 'diffwalking', 
+                                   'sex', 'agecategory', 'race', 'diabetic', 
+                                   'physicalactivity', 'genhealth', 'asthma', 
+                                   'kidneydisease', 'skincancer']
+        self.models = {
+            'logistic': (LogisticRegression, {'random_state': 42, 'max_iter': 1000}),
+            'decision_tree': (DecisionTreeClassifier, {'random_state': 42, 'max_depth': 10}),
+            'random_forest': (RandomForestClassifier, {'random_state': 42, 'n_estimators': 100}),
+            'xgboost': (XGBClassifier, {'random_state': 42, 'n_estimators': 100}),
+            'lightgbm': (LGBMClassifier, {'random_state': 42, 'n_estimators': 100})
+        }
+        
+    def prepare_data(self, df):
+        """準備數據：標準化數值特徵和編碼類別特徵"""
+        # 數值特徵處理
+        scaler = StandardScaler()
+        X_num = scaler.fit_transform(df[self.numerical_features])
+        
+        # 類別特徵處理
+        cat_data = df[self.categorical_features].copy()
+        for col in self.categorical_features:
+            cat_data[col] = cat_data[col].str.lower().str.replace(' ', '_')
+        
+        dv = DictVectorizer(sparse=False)
+        X_cat = dv.fit_transform(cat_data.to_dict(orient='records'))
+        
+        # 合併特徵
+        X = np.hstack([X_num, X_cat])
+        
+        return X, scaler, dv
+    
+    def train_model(self, X, y, model_class, model_params, use_smote=False):
+        """訓練單個模型"""
+        if use_smote:
+            smote = SMOTE(random_state=42)
+            X, y = smote.fit_resample(X, y)
+        
+        model = model_class(**model_params)
+        model.fit(X, y)
+        return model
+    
+    def train_all_models(self, df_train, y_train, df_test):
+        """訓練所有模型並保存"""
+        # 準備數據
+        X, scaler, dv = self.prepare_data(df_train)
+        
+        # 保存測試集
+        df_test.to_pickle('data/df_test.pkl')
+        print("Saved test data")
+        
+        # 使用tqdm創建進度條
+        with tqdm(total=len(self.models) * 2) as pbar:
+            for model_name, (model_class, params) in self.models.items():
+                # 訓練原始模型
+                model = self.train_model(X, y_train, model_class, params, use_smote=False)
+                self.save_model(model, scaler, dv, f'models/{model_name}_original.bin')
+                pbar.update(1)
+                
+                # 訓練SMOTE模型
+                model_smote = self.train_model(X, y_train, model_class, params, use_smote=True)
+                self.save_model(model_smote, scaler, dv, f'models/{model_name}_smote.bin')
+                pbar.update(1)
+                
+                time.sleep(0.1)  # 讓進度條更容易看見
+    
+    def save_model(self, model, scaler, dv, filename):
+        """保存模型和預處理器"""
+        with open(filename, 'wb') as f_out:
+            pickle.dump((dv, scaler, model), f_out)
+        print(f"Saved model: {filename}")
+
+def main():
+    # 載入數據
+    df = pd.read_csv('heart_2020_cleaned.csv')
+    
+    # 資料預處理
+    df.columns = df.columns.str.lower()
+    for col in df.select_dtypes(['object']).columns:
+        df[col] = df[col].str.lower().str.replace(' ', '_')
+    
+    # 將目標變數轉換為數值
+    df['heartdisease'] = (df['heartdisease'] == 'yes').astype(int)
+    
+    # 分割訓練集和測試集
+    from sklearn.model_selection import train_test_split
+    df_train, df_test = train_test_split(df, test_size=0.2, random_state=42)
+    
+    # 準備目標變數
+    y_train = df_train.pop('heartdisease').values
+    df_test_for_save = df_test.copy()
+    y_test = df_test.pop('heartdisease').values
+    
+    # 創建必要的目錄
+    import os
+    os.makedirs('models', exist_ok=True)
+    os.makedirs('data', exist_ok=True)
+    
+    # 訓練模型
+    trainer = ModelTrainer()
+    trainer.train_all_models(df_train, y_train, df_test_for_save)
+
+if __name__ == "__main__":
+    main()
+
+```
+
+然後是 Streamlit 應用：
+
+```python
+import streamlit as st
+import pandas as pd
+import numpy as np
+import pickle
+from pathlib import Path
+import os
+
+class HeartDiseasePredictor:
+    def __init__(self):
+        self.load_data()
+        self.setup_page()
+    
+    def load_data(self):
+        """載入測試數據和獲取可用的模型"""
+        self.df_test = pd.read_pickle('data/df_test.pkl')
+        self.models_path = Path('models')
+        self.available_models = list(self.models_path.glob('*.bin'))
+    
+    def setup_page(self):
+        """設置頁面佈局"""
+        st.title('Heart Disease Prediction App')
+        st.sidebar.title('Model Selection')
+        
+        # 模型選擇
+        self.selected_model_path = st.sidebar.selectbox(
+            'Choose a model:',
+            options=self.available_models,
+            format_func=lambda x: x.stem  # 只顯示文件名，不顯示.bin
+        )
+        
+        # 顯示模型描述
+        model_type = self.selected_model_path.stem.split('_')[0]
+        is_smote = 'smote' in self.selected_model_path.stem
+        
+        st.sidebar.markdown(f"""
+        **Selected Model Info:**
+        - Type: {model_type.upper()}
+        - SMOTE: {'Yes' if is_smote else 'No'}
+        """)
+    
+    def load_model(self, model_path):
+        """載入選擇的模型"""
+        with open(model_path, 'rb') as f:
+            return pickle.load(f)
+    
+    def create_feature_input(self):
+        """創建特徵輸入界面"""
+        st.header('Patient Information')
+        
+        # 選擇測試集樣本
+        test_index = st.number_input(
+            'Select test set index:',
+            min_value=0,
+            max_value=len(self.df_test)-1,
+            value=0
+        )
+        
+        selected_patient = self.df_test.iloc[test_index].to_dict()
+        
+        col1, col2 = st.columns(2)
+        
+        # 數值特徵
+        numerical_features = ['bmi', 'physicalhealth', 'mentalhealth', 'sleeptime']
+        with col1:
+            st.subheader('Numerical Features')
+            numerical_values = {}
+            for feature in numerical_features:
+                numerical_values[feature] = st.number_input(
+                    f'{feature}:',
+                    value=float(selected_patient[feature]),
+                    format='%f'
+                )
+        
+        # 類別特徵和選項
+        categorical_features = {
+            'smoking': ['yes', 'no'],
+            'alcoholdrinking': ['yes', 'no'],
+            'stroke': ['yes', 'no'],
+            'diffwalking': ['yes', 'no'],
+            'sex': ['female', 'male'],
+            'agecategory': ['18-24', '25-29', '30-34', '35-39', '40-44', '45-49', 
+                           '50-54', '55-59', '60-64', '65-69', '70-74', '75-79', '80_or_older'],
+            'race': ['white', 'black', 'asian', 'hispanic', 'american_indian/alaskan_native', 'other'],
+            'diabetic': ['yes', 'no', 'no,_borderline_diabetes', 'yes_(during_pregnancy)'],
+            'physicalactivity': ['yes', 'no'],
+            'genhealth': ['excellent', 'very_good', 'good', 'fair', 'poor'],
+            'asthma': ['yes', 'no'],
+            'kidneydisease': ['yes', 'no'],
+            'skincancer': ['yes', 'no']
+        }
+        
+        with col2:
+            st.subheader('Categorical Features')
+            categorical_values = {}
+            for feature, options in categorical_features.items():
+                current_value = str(selected_patient[feature]).lower()
+                categorical_values[feature] = st.selectbox(
+                    f'{feature}:',
+                    options=options,
+                    index=options.index(current_value) if current_value in options else 0
+                )
+        
+        return {**numerical_values, **categorical_values}
+    
+    def predict(self, patient_data, dv, scaler, model):
+        """進行預測"""
+        try:
+            # 將數據轉換為DataFrame
+            patient_df = pd.DataFrame([patient_data])
+            
+            # 處理數值特徵
+            numerical_features = ['bmi', 'physicalhealth', 'mentalhealth', 'sleeptime']
+            X_num = scaler.transform(patient_df[numerical_features])
+            
+            # 處理類別特徵
+            categorical_dict = {k: v for k, v in patient_data.items() 
+                              if k not in numerical_features}
+            X_cat = dv.transform([categorical_dict])
+            
+            # 合併特徵
+            X = np.hstack([X_num, X_cat])
+            
+            # 預測
+            if hasattr(model, 'predict_proba'):
+                return model.predict_proba(X)[0, 1]
+            else:
+                return model.predict(X)[0]
+        except Exception as e:
+            st.error(f"Prediction error: {str(e)}")
+            return None
+    
+    def run(self):
+        """運行應用"""
+        # 載入選擇的模型
+        dv, scaler, model = self.load_model(self.selected_model_path)
+        
+        # 創建特徵輸入界面
+        patient_data = self.create_feature_input()
+        
+        # 預測按鈕
+        if st.button('Predict Heart Disease Risk'):
+            probability = self.predict(patient_data, dv, scaler, model)
+            
+            if probability is not None:
+                st.header('Prediction Result')
+                
+                # 進度條顯示風險
+                st.progress(probability)
+                
+                # 顯示具體數值
+                st.metric(
+                    label="Heart Disease Risk",
+                    value=f"{probability:.1%}"
+                )
+                
+                # 風險等級
+                risk_level = (
+                    "🔴 High Risk! Please consult a doctor." if probability >= 0.7
+                    else "🟡 Medium Risk. Regular check-ups recommended." if probability >= 0.3
+                    else "🟢 Low Risk. Maintain a healthy lifestyle."
+                )
+                
+                st.info(risk_level)
+                
+                # 顯示關鍵風險因素
+                st.subheader('Key Risk Factors')
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("BMI", f"{patient_data['bmi']:.1f}")
+                with col2:
+                    st.metric("Physical Health", f"{patient_data['physicalhealth']:.1f}")
+                with col3:
+                    st.metric("Mental Health", f"{patient_data['mentalhealth']:.1f}")
+
+if __name__ == "__main__":
+    app = HeartDiseasePredictor()
+    app.run()
+
+```
+
+使用步驟：
+
+1. 安裝必要的套件：
+```bash
+pip install streamlit pandas numpy scikit-learn xgboost lightgbm imbalanced-learn tqdm
+```
+
+2. 整理專案結構：
+```
+heart_disease_prediction/
+├── data/
+├── models/
+├── train.py
+├── app.py
+└── requirements.txt
+```
+
+3. 訓練模型：
+```bash
+python train.py
+```
+
+4. 運行 Streamlit 應用：
+```bash
+streamlit run app.py
+```
+
+這個實現的特點：
+
+1. 模型訓練：
+   - 支援多種模型
+   - SMOTE 和原始版本
+   - 訓練進度條顯示
+   - 自動保存所有模型
+
+2. Streamlit 界面：
+   - 清晰的模型選擇
+   - 直觀的數據輸入
+   - 詳細的預測結果
+   - 風險等級視覺化
+
+3. 代碼組織：
+   - 模塊化設計
+   - 錯誤處理
+   - 清晰的代碼註釋
+
+4. 用戶體驗：
+   - 進度條顯示
+   - 風險等級分類
+   - 關鍵指標展示

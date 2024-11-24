@@ -1,0 +1,109 @@
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.env
+.venv
+venv/
+ENV/
+env/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Project specific
+# Models
+models/*.bin
+models/*.pkl
+models/*.model
+models/*.joblib
+models/*.h5
+models/*.hdf5
+models/*.pt
+models/*.pth
+models/*.onnx
+models/*.tf
+!models/.gitkeep
+
+# Data files
+data/*.csv
+data/*.pkl
+data/*.json
+data/*.parquet
+data/*.h5
+data/*.npy
+data/*.npz
+!data/.gitkeep
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+logs/
+*.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test files and directories
+test/
+tests/
+testing/
+__tests__/
+*.test.*
+*.spec.*
+coverage/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Distribution / packaging
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Large files
+*.bin
+*.pkl
+*.model
+*.joblib
+*.h5
+*.hdf5

@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+scikit-learn = "==1.4.0"
+numpy = "==1.26.3"
+flask = "*"
+gunicorn = "*"
+streamlit = "==1.31.0"
+pandas = "==2.2.0"
+xgboost = "==2.0.3"
+lightgbm = "==4.2.0"
+imbalanced-learn = "==0.11.0"
+tqdm = "==4.66.1"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

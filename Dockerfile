@@ -6,12 +6,17 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+# Install pipenv
+RUN pip install pipenv
+COPY Pipfile* ./
+
+RUN pipenv install --deploy --system
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+# COPY requirements.txt .
 
 # Install dependencies
-RUN pip install -r requirements.txt
+# RUN pip install -r requirements.txt
 
 # Copy the rest of the application
 COPY . .

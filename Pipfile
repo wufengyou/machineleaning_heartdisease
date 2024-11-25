@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-scikit-learn = "==1.4.0"
+scikit-learn = "==1.4.1.post1"
 numpy = "==1.26.3"
 flask = "*"
 gunicorn = "*"

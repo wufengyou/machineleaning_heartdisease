@@ -88,11 +88,15 @@ You can access the deployed application at: [Your Streamlit Cloud URL]
 
 ## Containerization
 
+```bash
 docker build -t heart-disease-predictor .
-
 docker run -p 8501:8501 -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data heart-disease-predictor
+```
 
-notes : --volume   can get model and testdata from here : https://www.dropbox.com/scl/fi/duxvgv34csb38hl0dh3iy/model_testdata.zip?rlkey=nzui38fi7ohvctog18b2bibco&st=ltspv0j5&dl=0
+notes : --volume   can get model and testdata from here : 
+
+[model file](https://www.dropbox.com/scl/fi/duxvgv34csb38hl0dh3iy/model_testdata.zip?rlkey=nzui38fi7ohvctog18b2bibco&st=ltspv0j5&dl=0)  
+
 
 ## Project Structure
 
@@ -132,7 +136,7 @@ notes : --volume   can get model and testdata from here : https://www.dropbox.co
   - ROC AUC
   - Confusion Matrix
 
-## Installation
+## Installation (optional ,unless you want to train your own model )
 
 1. Clone the repository:
 
@@ -253,6 +257,15 @@ To contribute to this project:
 
 For a complete list of dependencies, see `requirements.txt`.
 
+
+
+## Cloud deployment
+
+This app was deployed in streamlit cloud  as well :
+
+[Streamlit](https://machineleaningheartdisease-2strpccmzvbjeboadwzxxz.streamlit.app/)
+
+
 ## Known Issues
 
 - Large model files are not included in the repository and need to be generated locally
@@ -260,12 +273,12 @@ For a complete list of dependencies, see `requirements.txt`.
 
 ## Future Improvements
 
-- [ ]  Add model explanability features (SHAP values)
-- [ ]  Implement more advanced feature engineering
-- [ ]  Add support for more model types
-- [ ]  Improve UI/UX with more visualizations
-- [ ]  Add data preprocessing options
-- [ ]  Implement model retraining capability
+- [ ] Add model explanability features (SHAP values)
+- [ ] Implement more advanced feature engineering
+- [ ] Add support for more model types
+- [ ] Improve UI/UX with more visualizations
+- [ ] Add data preprocessing options
+- [ ] Implement model retraining capability
 
 ## License
 

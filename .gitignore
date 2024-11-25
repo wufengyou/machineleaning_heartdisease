@@ -37,26 +37,11 @@ env/
 
 # Project specific
 # Models
-models/*.bin
-models/*.pkl
-models/*.model
-models/*.joblib
-models/*.h5
-models/*.hdf5
-models/*.pt
-models/*.pth
-models/*.onnx
-models/*.tf
+
 !models/.gitkeep
 
 # Data files
-data/*.csv
-data/*.pkl
-data/*.json
-data/*.parquet
-data/*.h5
-data/*.npy
-data/*.npz
+
 !data/.gitkeep
 
 # Jupyter Notebook

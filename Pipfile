@@ -8,12 +8,15 @@ scikit-learn = "==1.4.1.post1"
 numpy = "==1.26.3"
 flask = "*"
 gunicorn = "*"
-streamlit = "==1.31.0"
+streamlit = "==1.40.1"
 pandas = "==2.2.0"
 xgboost = "==2.0.3"
 lightgbm = "==4.2.0"
 imbalanced-learn = "==0.11.0"
 tqdm = "==4.66.1"
+matplotlib = "*"
+seaborn = "*"
+waitress = "*"
 
 [dev-packages]
 

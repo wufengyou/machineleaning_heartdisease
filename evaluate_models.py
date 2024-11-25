@@ -13,7 +13,7 @@ import time
 
 class ModelEvaluator:
     def __init__(self, models_dir: str = 'models', data_dir: str = 'data'):
-        """初始化模型評估器"""
+        """Initialize model evaluator"""
         self.models_dir = Path(models_dir)
         self.data_dir = Path(data_dir)
         self.models: Dict[str, Tuple[Any, Any, Any]] = {}
@@ -22,84 +22,84 @@ class ModelEvaluator:
         self.load_models()
     
     def load_test_data(self):
-        """載入並處理測試數據"""
+        """Load and process test data"""
         try:
             df_test = pd.read_pickle(self.data_dir / 'df_test.pkl')
             
-            # 檢查原始數據結構
-            print("\n原始數據結構：")
+            # Check original data structure
+            print("\nOriginal data structure:")
             print(df_test.head())
-            print("\n數據類型：")
+            print("\nData types:")
             print(df_test.dtypes)
             
-            # 確保 heartdisease 列的處理正確
+            # Ensure correct processing of heartdisease column
             if 'heartdisease' in df_test.columns:
-                if df_test['heartdisease'].dtype == 'O':  # 如果是字符串類型
+                if df_test['heartdisease'].dtype == 'O':  # If string type
                     self.y_test = (df_test['heartdisease'].str.lower() == 'yes').astype(int)
                     self.X_test = df_test.drop('heartdisease', axis=1)
-                else:  # 如果已經是數值類型
+                else:  # If already numeric type
                     self.y_test = df_test['heartdisease'].astype(int)
                     self.X_test = df_test.drop('heartdisease', axis=1)
             
-            # 打印目標變數的分布
+            # Print target variable distribution
             value_counts = pd.Series(self.y_test).value_counts()
-            print("\n目標變數分布：")
+            print("\nTarget variable distribution:")
             print(value_counts)
-            print(f"正樣本比例: {(self.y_test.mean() * 100):.2f}%")
-            print(f"載入測試數據: {len(self.X_test)} 筆")
+            print(f"Positive sample ratio: {(self.y_test.mean() * 100):.2f}%")
+            print(f"Loaded test data: {len(self.X_test)} records")
             
         except Exception as e:
-            print(f"載入數據時發生錯誤: {str(e)}")
+            print(f"Error loading data: {str(e)}")
             raise
     
     def load_models(self):
-        """載入所有模型"""
+        """Load all models"""
         for model_path in self.models_dir.glob('*.bin'):
             try:
                 with open(model_path, 'rb') as f:
                     dv, scaler, model = pickle.load(f)
                     self.models[model_path.stem] = (dv, scaler, model)
-                print(f"成功載入模型: {model_path.stem}")
+                print(f"Successfully loaded model: {model_path.stem}")
             except Exception as e:
-                print(f"載入模型 {model_path.stem} 時發生錯誤: {str(e)}")
-        print(f"共載入 {len(self.models)} 個模型")
+                print(f"Error loading model {model_path.stem}: {str(e)}")
+        print(f"Loaded {len(self.models)} models in total")
     
     def prepare_features(self, dv, scaler, X) -> np.ndarray:
-        """準備特徵數據"""
+        """Prepare feature data"""
         try:
             numerical_features = ['bmi', 'physicalhealth', 'mentalhealth', 'sleeptime']
             categorical_features = [col for col in X.columns if col not in numerical_features]
             
-            # 數值特徵處理
+            # Process numerical features
             X_num = scaler.transform(X[numerical_features])
             
-            # 類別特徵處理
+            # Process categorical features
             cat_data = X[categorical_features].copy()
             for col in categorical_features:
-                if cat_data[col].dtype == 'O':  # 如果是字符串類型
+                if cat_data[col].dtype == 'O':  # If string type
                     cat_data[col] = cat_data[col].str.lower().str.replace(' ', '_')
             
             X_cat = dv.transform(cat_data.to_dict(orient='records'))
             
             return np.hstack([X_num, X_cat])
         except Exception as e:
-            print(f"特徵準備時發生錯誤: {str(e)}")
+            print(f"Error during feature preparation: {str(e)}")
             raise
 
     def evaluate_model(self, model_name: str) -> dict:
-        """評估單個模型"""
+        """Evaluate single model"""
         try:
-            print(f"\n評估模型: {model_name}")
+            print(f"\nEvaluating model: {model_name}")
             dv, scaler, model = self.models[model_name]
             X_transformed = self.prepare_features(dv, scaler, self.X_test)
             
-            # 計時預測過程
+            # Time the prediction process
             start_time = time.time()
             y_pred = model.predict(X_transformed)
             y_pred_proba = model.predict_proba(X_transformed)[:, 1]
             prediction_time = time.time() - start_time
             
-            # 計算評估指標
+            # Calculate evaluation metrics
             results = {
                 'model_name': model_name,
                 'accuracy': accuracy_score(self.y_test, y_pred),
@@ -111,15 +111,15 @@ class ModelEvaluator:
                 'y_pred_proba': y_pred_proba
             }
             
-            # 只在有兩個類別時計算 ROC AUC
+            # Calculate ROC AUC only for binary classification
             if len(np.unique(self.y_test)) == 2:
                 results['roc_auc'] = roc_auc_score(self.y_test, y_pred_proba)
             else:
                 results['roc_auc'] = None
-                print("警告：由於測試集只有單一類別，無法計算 ROC AUC 分數")
+                print("Warning: Cannot calculate ROC AUC score as test set has only one class")
             
-            # 打印當前結果
-            print("\n評估結果：")
+            # Print current results
+            print("\nEvaluation results:")
             for metric, value in results.items():
                 if metric not in ['confusion_matrix', 'y_pred_proba']:
                     print(f"{metric}: {value}")
@@ -127,22 +127,22 @@ class ModelEvaluator:
             return results
             
         except Exception as e:
-            print(f"評估模型 {model_name} 時發生錯誤: {str(e)}")
+            print(f"Error evaluating model {model_name}: {str(e)}")
             raise
 
     def evaluate_all_models(self):
-        """評估所有模型"""
+        """Evaluate all models"""
         for model_name in self.models.keys():
             try:
                 results = self.evaluate_model(model_name)
                 self.results.append(results)
             except Exception as e:
-                print(f"評估模型 {model_name} 時發生錯誤: {str(e)}")
+                print(f"Error evaluating model {model_name}: {str(e)}")
 
     def plot_confusion_matrices(self):
-        """繪製所有模型的混淆矩陣"""
+        """Plot confusion matrices for all models"""
         if not self.results:
-            print("沒有可用的評估結果來繪製混淆矩陣")
+            print("No evaluation results available for plotting confusion matrices")
             return
             
         n_models = len(self.results)
@@ -166,50 +166,50 @@ class ModelEvaluator:
             axes[idx].set_xlabel('Predicted')
             axes[idx].set_ylabel('Actual')
         
-        # 隱藏未使用的子圖
+        # Hide unused subplots
         for idx in range(len(self.results), len(axes)):
             axes[idx].set_visible(False)
         
         plt.tight_layout()
         plt.savefig('confusion_matrices.png')
         plt.close()
-        print("混淆矩陣圖已保存為 'confusion_matrices.png'")
+        print("Confusion matrices saved as 'confusion_matrices.png'")
     
     def generate_report(self):
-        """生成評估報告"""
+        """Generate evaluation report"""
         if not self.results:
-            print("沒有可用的評估結果來生成報告")
+            print("No evaluation results available for generating report")
             return None
             
-        # 創建性能指標DataFrame
+        # Create performance metrics DataFrame
         metrics_df = pd.DataFrame([
             {k: v for k, v in r.items() if not isinstance(v, (np.ndarray, list))}
             for r in self.results
         ])
         
-        # 排序模型按準確率
+        # Sort models by accuracy
         metrics_df = metrics_df.sort_values('accuracy', ascending=False)
         
-        # 生成報告
-        report = "# 心臟病預測模型評估報告\n\n"
+        # Generate report
+        report = "# Heart Disease Prediction Model Evaluation Report\n\n"
         
-        report += "## 資料集統計\n"
-        report += f"- 總樣本數: {len(self.X_test)}\n"
-        report += f"- 正樣本比例: {(self.y_test.mean() * 100):.2f}%\n\n"
+        report += "## Dataset Statistics\n"
+        report += f"- Total samples: {len(self.X_test)}\n"
+        report += f"- Positive sample ratio: {(self.y_test.mean() * 100):.2f}%\n\n"
         
-        report += "## 模型性能總覽\n"
+        report += "## Model Performance Overview\n"
         performance_table = metrics_df[['model_name', 'accuracy', 'precision', 'recall', 'f1', 'prediction_time']].to_string(index=False)
         report += f"```\n{performance_table}\n```\n\n"
         
-        # 保存報告
+        # Save report
         with open('model_evaluation_report.md', 'w', encoding='utf-8') as f:
             f.write(report)
         
-        print("\n評估報告已生成！")
+        print("\nEvaluation report generated!")
         return metrics_df
 
 def main():
-    """主函數"""
+    """Main function"""
     try:
         evaluator = ModelEvaluator()
         evaluator.evaluate_all_models()
@@ -217,11 +217,11 @@ def main():
         results_df = evaluator.generate_report()
         
         if results_df is not None and not results_df.empty:
-            print("\n最佳模型性能指標：")
+            print("\nBest model performance metrics:")
             print(results_df.iloc[0])
             
     except Exception as e:
-        print(f"程式執行時發生錯誤: {str(e)}")
+        print(f"Error during program execution: {str(e)}")
         raise
 
 if __name__ == "__main__":

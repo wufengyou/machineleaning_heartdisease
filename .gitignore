@@ -61,7 +61,7 @@ data/*.npz
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
+# *.ipynb
 
 # Logs and databases
 *.log

@@ -86,6 +86,15 @@ The application provides:
 
 You can access the deployed application at: [Your Streamlit Cloud URL]
 
+
+## Containerization
+
+docker build -t heart-disease-predictor . 
+
+docker run -p 8501:8501 -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data heart-disease-predictor 
+
+notes : --volume   can get model and testdata from here : https://www.dropbox.com/scl/fi/duxvgv34csb38hl0dh3iy/model_testdata.zip?rlkey=nzui38fi7ohvctog18b2bibco&st=ltspv0j5&dl=0
+
 ## Project Structure
 
 ```
@@ -95,9 +104,9 @@ You can access the deployed application at: [Your Streamlit Cloud URL]
 ├── evaluate_models.py     # Model evaluation script
 ├── requirements.txt       # Project dependencies
 ├── models/               # Directory for trained models (created after training)
-│   └── .gitkeep
+│   └── .gitkeep            # models go here 
 └── data/                # Directory for processed data (created during training)
-    └── .gitkeep
+    └── .gitkeep            #  testdata go here
 ```
 
 ## Features
@@ -159,7 +168,8 @@ This will:
 - Process the input data
 - Train all model variants
 - Save models to the `models/` directory
-- or simply download the trained model and test data from https://www.dropbox.com/scl/fi/zrtfitsy8zzw1s6sz6zyj/Dropbox.pdf?rlkey=f2fpblqclrm0vb1m59ca07x0d&st=hsrvuzse&dl=0
+- or simply download the trained model and test data from following url
+- https://www.dropbox.com/scl/fi/duxvgv34csb38hl0dh3iy/model_testdata.zip?rlkey=nzui38fi7ohvctog18b2bibco&st=ltspv0j5&dl=0
 
 2. (Optional) Evaluate model performance:
 
@@ -204,7 +214,6 @@ random_forest_original  0.901343   0.336966 0.132690 0.190403         4.018701
    decision_tree_smote  0.791585   0.234527 0.611230 0.338986         0.034569
         logistic_smote  0.746306   0.225390 0.780401 0.349764         0.020484
 ```
-
 
 ## Input Features
 

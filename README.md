@@ -86,12 +86,11 @@ The application provides:
 
 You can access the deployed application at: [Your Streamlit Cloud URL]
 
-
 ## Containerization
 
-docker build -t heart-disease-predictor . 
+docker build -t heart-disease-predictor .
 
-docker run -p 8501:8501 -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data heart-disease-predictor 
+docker run -p 8501:8501 -v $(pwd)/models:/app/models -v $(pwd)/data:/app/data heart-disease-predictor
 
 notes : --volume   can get model and testdata from here : https://www.dropbox.com/scl/fi/duxvgv34csb38hl0dh3iy/model_testdata.zip?rlkey=nzui38fi7ohvctog18b2bibco&st=ltspv0j5&dl=0
 
@@ -198,6 +197,8 @@ Dataset Statistics
 
 - Total samples: 63959
 - Positive sample ratio: 8.74%
+
+![model confusing matrics](https://github.com/wufengyou/machineleaning_heartdisease/blob/main/confusion_matrices.png)
 
 ## Model Performance Overview
 
